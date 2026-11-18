@@ -15,7 +15,7 @@ from typing import Any, Dict, List
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, Response
 
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.1.0"
 START_TS = time.time()
 HF_ORG = "SZLHOLDINGS"
 GH_ORG = "szl-holdings"
@@ -39,10 +39,6 @@ def receipted(payload: Any, status: str = "OK") -> Response:
     return r
 
 
-def failed(payload: Any) -> Response:
-    return receipted(payload, status="DEGRADED")
-
-
 # ------------------------------------------------------------------ baked receipts (public evidence, hash-pinned)
 
 SCHOLAR_V1 = {
@@ -62,21 +58,33 @@ SCHOLAR_V1 = {
     "no_decipherment_claims": True,
 }
 
+STRUCTURE_V1 = {
+    "id": "khipu-structure-v1-complete",
+    "kind": "TRAINING_COMPLETION",
+    "status": "AUTHORIZED",
+    "ts": "2026-11-18T12:51:52Z",
+    "model": "SZLHOLDINGS/salad-khipu-structure-v1",
+    "base": "Qwen/Qwen3-1.7B",
+    "steps": 2000,
+    "final_loss": 0.03599780797958374,
+    "gpu_hours": 25.62,
+    "corpus_sha256": "0e4a09da905e708b63e661cf83b09df30e9352d143f725a5b24f4a22f107c616",
+    "signature": "ed25519 DSSE receipt mesh/khipu-structure-v1-complete.json (SZLHOLDINGS/khipu-scholar-runs)",
+    "evidence": "https://huggingface.co/SZLHOLDINGS/salad-khipu-structure-v1",
+    "no_decipherment_claims": True,
+}
+
 FLEET_SNAPSHOT = {
-    "ts": "2026-11-18T02:49Z",
+    "ts": "2026-11-18T16:40Z",
     "lanes": [
+        {"lane": "szl-train-khipu-scholar-4b-v1", "status": "TRAINING (step 1260 / loss 0.0081 @ 16:38Z)", "note": "final receipt expected 2026-11-19"},
+        {"lane": "szl-train-khipu-structure-v1", "status": "COMPLETE + RELEASED @ 12:51:52Z; churn retrain parked 16:42Z", "note": "loss 0.0360 / 2,000 steps / 25.62 GPU-h"},
         {"lane": "szl-eval-khipu-scholar-v1", "status": "EVAL (replicas=1, measured)", "note": "scholar eval lane"},
-        {"lane": "szl-eval-khipu-structure-v1", "status": "EVAL (replicas=1, measured)", "note": "structure eval lane"},
+        {"lane": "szl-eval-khipu-structure-v1", "status": "EVAL (trigger fired 16:38Z, instances 0 @ 16:40Z)", "note": "structure eval lane"},
         {"lane": "szl-inference-v3", "status": "SERVING (replicas=1, measured)", "note": "inference lane"},
-        {"lane": "szl-a11oy-code-train-v2", "status": "TRAINING (replicas=1, measured)", "note": "a11oy code train"},
-        {"lane": "szl-frontier54-v2r-all", "status": "RUNNING (replicas=1, measured)", "note": "frontier 54"},
-        {"lane": "szl-ring-bench-v1", "status": "BENCH (replicas=1, measured)", "note": "ring bench"},
-        {"lane": "szl-ring-bench-v2", "status": "BENCH (replicas=1, measured)", "note": "ring bench"},
-        {"lane": "khipu-scholar-4b", "status": "TRAINING (step 640 / loss 0.0106 @ 02:21Z)", "note": "completes 2026-11-19"},
-        {"lane": "khipu-structure-v1", "status": "TRAINING (step 1180 / loss 0.0353 @ 02:21Z)", "note": "completes 2026-11-19"},
     ],
-    "total_lanes_measured": 145,
-    "watchers": {"mesh_watch": "ALIVE (PID 15404 @ 02:45Z)", "complete_watch": "ALIVE (PID 28552 @ 02:45Z)"},
+    "total_lanes_measured": 73,
+    "watchers": {"mesh_watch": "RELAUNCHED (PID 23704 @ 16:38Z)", "complete_watch": "ALIVE (48h window)"},
 }
 
 OUTREACH = [
@@ -114,17 +122,22 @@ STANDARDS = {
 }
 
 EVENTS = [
-    {"ts": "2026-11-18T02:49Z", "kind": "AUDIT", "detail": "org audit measured: 174 GitHub repos, 145 Salad lanes, HF models/datasets/spaces live-counted"},
+    {"ts": "2026-11-18T16:42Z", "kind": "RELEASE", "detail": "salad-khipu-structure-v1 PUBLIC: measured card + signed receipt block; churn retrain parked (decommission receipt)"},
+    {"ts": "2026-11-18T16:38Z", "kind": "WATCH", "detail": "mesh_watch relaunched (PID 23704); structure eval gate fired on AUTHORIZED complete receipt"},
+    {"ts": "2026-11-18T12:51:52Z", "kind": "TRAINING_COMPLETE", "detail": "structure-v1: loss 0.0360 / 2,000 steps / 25.62 GPU-h, DSSE receipt"},
+    {"ts": "2026-11-18T02:49Z", "kind": "AUDIT", "detail": "org audit measured: 174 GitHub repos, Salad lanes, HF models/datasets/spaces live-counted"},
     {"ts": "2026-11-18T02:44Z", "kind": "ACCESS", "detail": "szl-lambda-gate -> gated=auto; alyagh pending request auto-granted"},
     {"ts": "2026-11-18T02:43Z", "kind": "OUTREACH", "detail": "3 khipu-scholars co-authorship emails sent from stephen@szlholdings.com (Hyland first)"},
     {"ts": "2026-11-18T02:35Z", "kind": "RELEASE", "detail": "szl-khipu-scholar PR #4 merged (main 0c67eda): scholar-v1 RELEASED"},
-    {"ts": "2026-11-18T00:06:08Z", "kind": "TRAINING_COMPLETE", "detail": "scholar-v1: loss 0.0085 / 2000 steps / 9.45 GPU-h, DSSE receipt"},
+    {"ts": "2026-11-18T00:06:08Z", "kind": "TRAINING_COMPLETE", "detail": "scholar-v1: loss 0.0085 / 2,000 steps / 9.45 GPU-h, DSSE receipt"},
     {"ts": "2026-11-17T19:18Z", "kind": "SPACE", "detail": "khipu-proof-loom v2 Space RUNNING (3 min after merge)"},
     {"ts": "2026-11-17T19:15:47Z", "kind": "MERGE", "detail": "Proof Loom v2 merged to szl-khipu main (00002bf1)"},
 ]
 
 SHOWCASE = {
     "models": [
+        {"id": "salad-khipu-scholar-v1", "downloads": 0, "note": "scholar adapter RELEASED"},
+        {"id": "salad-khipu-structure-v1", "downloads": 0, "note": "structure adapter RELEASED"},
         {"id": "SZL-Khipu-1.5B-GGUF", "downloads": 5172, "note": "flagship GGUF"},
         {"id": "SZL-Khipu-1.5B", "downloads": 1972, "note": "flagship"},
         {"id": "A11OY-MINI", "downloads": 904, "note": "governed mini"},
@@ -136,8 +149,8 @@ SHOWCASE = {
         {"id": "szl-lambda-gate", "downloads": 69, "note": "auto-gated pointer repo"},
     ],
     "spaces": ["khipu-proof-loom", "a11oy", "killinchu", "counsel", "terra", "sentra", "finance", "anatomy", "szl-frontier", "szl-model-inference-lab", "ayllu", "szl-constellation"],
-    "repos": ["a11oy", "killinchu", "hatun-mcp", "szl-khipu", "szl-khipu-scholar", "szl-lake", "szl-router", "szl-serve", "platform", "governance-as-code", "szl-evidence-core", "szl-trust", "frontier-54-runs", "szl-gpu-bridge", "a-11-oy.github.io", "szlholdings.com"],
-    "datasets": ["khipu-scholars-corpus-v1", "frontier-54-runs", "killinchu-osint-corpus", "szl-lake", "doctrine-v10-v11", "estate-graph", "governed-receipts-bench", "energy-attested-runs"],
+    "repos": ["a11oy", "killinchu", "hatun-mcp", "szl-khipu", "szl-khipu-scholar", "szl-lake", "szl-router", "szl-serve", "platform", "governance-as-code", "szl-evidence-core", "szl-trust", "frontier-54-runs", "frontier-console", "szl-gpu-bridge", "a-11-oy.github.io", "szlholdings.com"],
+    "datasets": ["khipu-scholars-corpus-v1", "khipu-scholar-runs", "khipu-scholar-eval-v1", "frontier-54-runs", "killinchu-osint-corpus", "szl-lake", "doctrine-v10-v11", "estate-graph", "governed-receipts-bench", "energy-attested-runs"],
     "kernels": ["kernels/SZLHOLDINGS/szl-lambda-gate (public)", "szl-kernels (299 downloads)"],
 }
 
@@ -147,7 +160,7 @@ ESTATE_FALLBACK = {
     "site": "https://szlholdings.com",
     "site_posture_measured": "A 34.111.179.208; TLS handshake fails (SSLEOFError) @ 2026-11-18T02:49Z - DNS/TLS repair is owner-gated",
     "repos_measured": 174,
-    "lanes_measured": 145,
+    "lanes_measured": 73,
 }
 
 
@@ -215,6 +228,7 @@ def _salad_fleet() -> Dict[str, Any]:
             try:
                 r2 = urllib.request.urlopen(urllib.request.Request(base + "/" + l["lane"] + "/instances", headers={"Salad-Api-Key": key}), timeout=15)
                 insts = json.loads(r2.read().decode())
+                insts = insts.get("instances", insts) if isinstance(insts, dict) else insts
                 l["instances"] = len(insts) if isinstance(insts, list) else len(str(insts))
             except Exception:
                 l["instances"] = "UNKNOWN"
@@ -253,7 +267,7 @@ def fleet():
 
 @app.get("/api/mesh")
 def mesh():
-    return receipted({"scholar_v1": SCHOLAR_V1, "outreach": OUTREACH, "proof": PROOF, "events": EVENTS})
+    return receipted({"scholar_v1": SCHOLAR_V1, "structure_v1": STRUCTURE_V1, "outreach": OUTREACH, "proof": PROOF, "events": EVENTS})
 
 
 @app.get("/api/governance")
