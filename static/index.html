@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SZL Frontier Console</title>
+<style>
+:root{
+  --bg:#070b11; --panel:#0d131c; --panel2:#101823; --line:#1c2735;
+  --ink:#e8eef5; --dim:#8b97a8; --faint:#5a6675;
+  --lime:#76b900; --teal:#00c9a7; --blue:#5b9bd5; --amber:#ffb454; --red:#ff5c57;
+  --mono:ui-monospace,'Cascadia Mono','JetBrains Mono',Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:13px;line-height:1.45}
+a{color:var(--blue);text-decoration:none} a:hover{text-decoration:underline}
+header{display:flex;align-items:center;gap:16px;padding:10px 18px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#0b111a,#070b11)}
+.brand{font-size:15px;font-weight:700;letter-spacing:.12em;color:var(--lime);text-shadow:0 0 14px rgba(118,185,0,.35)}
+.brand small{color:var(--dim);font-weight:400;letter-spacing:.04em}
+.pills{display:flex;gap:6px;flex-wrap:wrap}
+.pill{border:1px solid var(--line);padding:2px 8px;font-size:10.5px;letter-spacing:.08em;color:var(--dim);background:var(--panel);clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)}
+.pill.g{color:var(--lime);border-color:rgba(118,185,0,.4)}
+.pill.t{color:var(--teal);border-color:rgba(0,201,167,.35)}
+#clock{margin-left:auto;color:var(--teal);font-size:12px;letter-spacing:.06em}
+nav{display:flex;gap:2px;padding:8px 18px 0;border-bottom:1px solid var(--line);background:var(--panel)}
+nav button{background:none;border:none;border-bottom:2px solid transparent;color:var(--dim);font-family:var(--mono);font-size:12px;letter-spacing:.1em;padding:8px 14px;cursor:pointer}
+nav button.on{color:var(--lime);border-bottom-color:var(--lime);text-shadow:0 0 10px rgba(118,185,0,.3)}
+main{padding:18px;max-width:1280px;margin:0 auto}
+.grid{display:grid;gap:14px}
+.cols3{grid-template-columns:repeat(3,1fr)} .cols2{grid-template-columns:repeat(2,1fr)} @media(max-width:900px){.cols3,.cols2{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);padding:14px;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);position:relative}
+.panel h2{font-size:11px;letter-spacing:.18em;color:var(--dim);margin-bottom:10px;text-transform:uppercase}
+.panel h2 b{color:var(--lime)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.tile{background:var(--panel2);border:1px solid var(--line);padding:10px}
+.tile .k{font-size:10px;color:var(--faint);letter-spacing:.1em;text-transform:uppercase}
+.tile .v{font-size:21px;color:var(--ink);margin-top:2px}
+.tile .v.g{color:var(--lime)} .tile .v.t{color:var(--teal)} .tile .v.a{color:var(--amber)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+td,th{padding:4px 8px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--faint);font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:400}
+tr:hover td{background:rgba(91,155,213,.05)}
+.tag{display:inline-block;padding:0 6px;font-size:10px;border:1px solid;letter-spacing:.06em}
+.tag.g{color:var(--lime);border-color:rgba(118,185,0,.45)} .tag.t{color:var(--teal);border-color:rgba(0,201,167,.4)}
+.tag.a{color:var(--amber);border-color:rgba(255,180,84,.45)} .tag.r{color:var(--red);border-color:rgba(255,92,87,.45)}
+.tag.d{color:var(--dim);border-color:var(--line)}
+.receipt{margin-top:10px;padding-top:8px;border-top:1px dashed #233046;color:var(--faint);font-size:10px;letter-spacing:.03em;word-break:break-all}
+.knot{color:var(--line);letter-spacing:2px;text-align:center;padding:4px 0;font-size:10px}
+.ev{display:flex;gap:10px;padding:5px 0;border-bottom:1px solid var(--line)}
+.ev .ts{color:var(--faint);white-space:nowrap;font-size:11px}
+.ev .kd{color:var(--teal);white-space:nowrap;font-size:11px;min-width:150px}
+.big{font-size:26px;color:var(--lime);text-shadow:0 0 16px rgba(118,185,0,.3)}
+.sha{color:var(--amber);word-break:break-all}
+.muted{color:var(--dim)} .faint{color:var(--faint)}
+footer{padding:14px 18px;border-top:1px solid var(--line);color:var(--faint);font-size:11px;letter-spacing:.04em;display:flex;gap:14px;flex-wrap:wrap}
+#stale{display:none;background:#2a1f0a;border:1px solid rgba(255,180,84,.5);color:var(--amber);padding:8px 18px;font-size:12px;letter-spacing:.05em}
+ul{list-style:none} ul li{padding:3px 0} ul li::before{content:':: ';color:var(--lime)}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">SZL // FRONTIER CONSOLE <small>&nbsp;szlholdings.com estate</small></div>
+  <div class="pills">
+    <span class="pill g">DOCTRINE v11</span>
+    <span class="pill t">TRUST CEILING 0.97</span>
+    <span class="pill">DENY BY DEFAULT</span>
+    <span class="pill">FAIL CLOSED</span>
+  </div>
+  <div id="clock">--:--:--Z</div>
+</header>
+<div id="stale">LIVE PROBE UNAVAILABLE - showing labeled snapshot. Honest UNKNOWN over fabricated green. Retrying every 30s.</div>
+<nav id="tabs"></nav>
+<main id="view"></main>
+<footer>
+  <span>SZL Holdings governed-AI estate</span><span>receipts-native: every panel footer is a sha256 of its source payload</span>
+  <span><a href="https://github.com/szl-holdings">github.com/szl-holdings</a></span>
+  <span><a href="https://huggingface.co/SZLHOLDINGS">huggingface.co/SZLHOLDINGS</a></span>
+  <span id="updated"></span>
+</footer>
+<script>
+const TABS=["OVERVIEW","FLEET","MESH","MODELS","PROOF","GOVERNANCE"];
+const S={tab:"OVERVIEW",data:{},live:false};
+const FALLBACK={
+ estate:{github:{source:"SNAPSHOT",public_repos_measured:174},site:{site_posture_measured:"A 34.111.179.208; TLS handshake fails @ 2026-11-18T02:49Z - DNS/TLS repair owner-gated",repos_measured:174,lanes_measured:145}},
+ hf:{source:"SNAPSHOT",models:[{id:"SZL-Khipu-1.5B-GGUF",downloads:5172},{id:"SZL-Khipu-1.5B",downloads:1972},{id:"A11OY-MINI",downloads:904},{id:"chaski",downloads:653},{id:"KHIPU-R2",downloads:318},{id:"WILLAY",downloads:303},{id:"szl-kernels",downloads:299}],datasets:[{id:"khipu-scholars-corpus-v1"},{id:"frontier-54-runs"},{id:"szl-lake"}],spaces:[{id:"khipu-proof-loom",stage:"RUNNING (measured 02:49Z)"}]},
+ fleet:{source:"SNAPSHOT",total_lanes_measured:145,lanes:[{lane:"szl-eval-khipu-scholar-v1",status:"EVAL (replicas=1)"},{lane:"szl-eval-khipu-structure-v1",status:"EVAL (replicas=1)"},{lane:"szl-inference-v3",status:"SERVING (replicas=1)"},{lane:"khipu-scholar-4b",status:"TRAINING step 640 / loss 0.0106"},{lane:"khipu-structure-v1",status:"TRAINING step 1180 / loss 0.0353"}],watchers:{"mesh_watch":"ALIVE @ 02:45Z","complete_watch":"ALIVE @ 02:45Z"}},
+ mesh:null,governance:null};
+function rcp(d,k){return (d&&d["x-szl-receipt"]||"").slice(0,24)+"..."}
+async function pull(){
+  const eps=["health","estate","hf","fleet","mesh","governance"];
+  const res={};let live=false;
+  await Promise.all(eps.map(async e=>{
+    try{const r=await fetch("/api/"+e);res[e]=await r.json();res[e]._rc=r.headers.get("X-SZL-Receipt")||"";if(r.ok)live=true;}
+    catch(err){}
+  }));
+  S.data=res;S.live=live||Object.keys(res).length>0;
+  document.getElementById("stale").style.display=(res.fleet&&res.fleet.status==="OK")?"none":"block";
+  render();
+}
+function tabBtns(){
+  const n=document.getElementById("tabs");n.innerHTML="";
+  TABS.forEach(t=>{const b=document.createElement("button");b.textContent=t;b.className=S.tab===t?"on":"";b.onclick=()=>{S.tab=t;render();tabBtns()};n.appendChild(b);});
+}
+function panel(title,inner,rc){return '<section class="panel"><h2>'+title+'</h2>'+inner+(rc?'<div class="receipt">receipt '+rc+'</div>':'')+'</section>'}
+function tile(k,v,cls){return '<div class="tile"><div class="k">'+k+'</div><div class="v '+(cls||"")+'">'+v+'</div></div>'}
+function tag(s,cls){return '<span class="tag '+cls+'">'+s+'</span>'}
+function esc(s){return String(s==null?"?":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function render(){
+  const v=document.getElementById("view");
+  const d=S.data;
+  const mesh=(d.mesh&&d.mesh.data)||FALLBACK.mesh;
+  const gov=(d.governance&&d.governance.data)||FALLBACK.governance;
+  const est=(d.estate&&d.estate.data)||FALLBACK.estate;
+  const hf=(d.hf&&d.hf.data)||FALLBACK.hf;
+  const fl=(d.fleet&&d.fleet.data)||FALLBACK.fleet;
+  document.getElementById("updated").textContent="updated "+new Date().toISOString().slice(0,19)+"Z";
+  if(S.tab==="OVERVIEW"){
+    const gh=est.github||{};const pubs=(hf.models||[]).filter(m=>!m.private).length;
+    v.innerHTML='<div class="grid cols3">'+
+      panel("<b>ESTATE</b> / measured",'<div class="tiles">'+tile("GITHUB REPOS",(gh.public_repos||gh.public_repos_measured||"?"),"g")+tile("HF MODELS",pubs+(hf.models?"/"+hf.models.length:""))+tile("HF DATASETS",(hf.datasets||[]).length,"t")+tile("HF SPACES",(hf.spaces||[]).length)+tile("SALAD LANES",fl.total_lanes||(fl.total_lanes_measured||"?"))+tile("ACTIVE LANES",fl.active?fl.active.length:"?","t")+'</div><div class="muted" style="margin-top:8px">'+esc(est.site?est.site.site_posture_measured:"")+'</div>',rcp(d.estate))+
+      panel("<b>SCHOLAR-V1</b> / first receipted adapter",'<div class="big">loss '+mesh.scholar_v1.final_loss.toFixed(4)+'</div><div class="muted">2,000 steps / 9.45 GPU-hours / DSSE-signed / AUTHORIZED 2026-11-18T00:06:08Z</div><div class="sha" style="margin-top:6px">corpus sha256 '+mesh.scholar_v1.corpus_sha256.slice(0,32)+'...</div><div style="margin-top:6px"><a href="'+mesh.scholar_v1.evidence+'">'+esc(mesh.scholar_v1.model)+'</a> '+tag("RELEASED","g")+' '+tag("NO DECIPHERMENT CLAIMS","d")+'</div>',rcp(d.mesh))+
+      panel("<b>DOCTRINE</b> / v11 locked",'<ul>'+(gov.governance?gov.governance.principles.map(p=>"<li>"+esc(p)+"</li>").join(""):"")+'</ul><div style="margin-top:8px">'+(gov.governance?gov.governance.gates_held.map(g=>tag("HELD "+g.split(" ")[0].toUpperCase(),"a")+" <span class='faint'>"+esc(g)+"</span>").join("<br>"):"")+'</div>',rcp(d.governance))+
+      '</div><div class="knot">~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~</div>'+panel("<b>MESH EVENT STREAM</b>",(mesh.events||[]).map(e=>'<div class="ev"><span class="ts">'+esc(e.ts)+'</span><span class="kd">'+esc(e.kind)+'</span><span>'+esc(e.detail)+'</span></div>').join(""),rcp(d.mesh));
+  }
+  if(S.tab==="FLEET"){
+    const active=fl.active||fl.lanes||[];
+    v.innerHTML='<div class="grid cols2">'+
+      panel("<b>ACTIVE LANES</b> / salad gpu fleet",'<table><tr><th>lane</th><th>replicas</th><th>instances</th></tr>'+active.map(l=>'<tr><td>'+esc(l.lane)+'</td><td class="'+(l.replicas?"t":"faint")+'">'+esc(l.replicas!=null?l.replicas:l.status||"?")+'</td><td>'+esc(l.instances!=null?l.instances:(l.status||"-"))+'</td></tr>').join("")+'</table><div class="muted" style="margin-top:8px">total lanes '+(fl.total_lanes||fl.total_lanes_measured||"?")+' / parked '+(fl.parked_count!=null?fl.parked_count:(fl.total_lanes_measured?(fl.total_lanes_measured-active.length):"?"))+'</div>',rcp(d.fleet))+
+      panel("<b>WATCHERS</b> / stewardship",'<ul>'+Object.entries(fl.watchers||{}).map(([k,v2])=>"<li>"+esc(k)+": <span class='t'>"+esc(v2)+"</span></li>").join("")+'</ul><div class="muted" style="margin-top:8px">mesh_watch re-fires evals at true gates; decommissioner parks finished/stale lanes (owner fleet order).</div>',rcp(d.fleet))+
+      '</div>';
+  }
+  if(S.tab==="MESH"){
+    v.innerHTML='<div class="grid cols2">'+
+      panel("<b>RECEIPT</b> / scholar-v1",'<table><tr><td>status</td><td>'+tag(mesh.scholar_v1.status,"g")+'</td></tr><tr><td>model</td><td><a href="'+mesh.scholar_v1.evidence+'">'+esc(mesh.scholar_v1.model)+'</a></td></tr><tr><td>base</td><td>'+esc(mesh.scholar_v1.base)+'</td></tr><tr><td>steps</td><td>'+mesh.scholar_v1.steps+'</td></tr><tr><td>final loss</td><td class="t">'+mesh.scholar_v1.final_loss+'</td></tr><tr><td>gpu hours</td><td>'+mesh.scholar_v1.gpu_hours+'</td></tr><tr><td>corpus sha256</td><td class="sha" style="font-size:10px">'+esc(mesh.scholar_v1.corpus_sha256)+'</td></tr><tr><td>signature</td><td>'+esc(mesh.scholar_v1.signature)+'</td></tr></table>',rcp(d.mesh))+
+      panel("<b>OUTREACH</b> / khipu-scholars lane",'<table><tr><th>who</th><th>to</th><th>sent (UTC)</th><th>gmail msg</th></tr>'+mesh.outreach.map(o=>'<tr><td>'+esc(o.who)+'</td><td>'+esc(o.to)+'</td><td class="t">'+esc(o.ts)+'</td><td class="faint">'+esc(o.gmail_id)+'</td></tr>').join("")+'</table><div class="muted" style="margin-top:8px">sent from stephen@szlholdings.com, Hyland first per doctrine; bodies carry the receipt text.</div>',rcp(d.mesh))+
+      '</div>';
+  }
+  if(S.tab==="MODELS"){
+    const ms=hf.models||[];const top=ms.slice().sort((a,b)=>(b.downloads||0)-(a.downloads||0)).slice(0,25);
+    v.innerHTML='<div class="grid">'+
+      panel("<b>HUGGING FACE</b> / '+esc(hf.source)+' inventory ('+ms.length+' models, '+(hf.datasets||[]).length+' datasets, '+(hf.spaces||[]).length+' spaces)', '<table><tr><th>model</th><th>downloads</th><th>gated</th><th>vis</th></tr>'+top.map(m=>'<tr><td><a href="https://huggingface.co/'+esc(m.id)+'">'+esc(m.id)+'</a></td><td class="t">'+(m.downloads||0)+'</td><td>'+esc(m.gated)+'</td><td>'+(m.private?tag("PRIVATE","d"):tag("PUBLIC","g"))+'</td></tr>').join("")+'</table><div class="muted" style="margin-top:8px">spaces: '+ (hf.spaces||[]).slice(0,12).map(s=>'<a href="https://huggingface.co/spaces/'+esc(s.id)+'">'+esc(s.id.split("/")[1])+'</a>').join(" / ")+'</div>',rcp(d.hf))+
+      '</div>';
+  }
+  if(S.tab==="PROOF"){
+    const p=mesh.proof;
+    v.innerHTML='<div class="grid cols3">'+
+      panel("<b>SPATIAL NULL</b> / okr shift test",'<div class="big">p = '+p.spatial_null.p+'</div><div class="muted">'+p.spatial_null.observed+' observed vs '+p.spatial_null.expected+' expected / '+esc(p.spatial_null.receipt)+'</div>',rcp(d.mesh))+
+      panel("<b>PROOF LOOM v2</b>", '<div>'+tag("MERGED 00002bf1","g")+' 2026-11-17T19:15:47Z</div><div style="margin-top:8px"><a href="'+p.proof_loom_v2.space+'">live Space</a> '+tag(p.proof_loom_v2.space_stage_measured.split(" ")[0],"t")+'</div><div class="faint" style="margin-top:6px">'+esc(p.hjo_certificate)+' / falsifier, hypothesis, sequence scout</div>',rcp(d.mesh))+
+      panel("<b>LEAN DISCHARGES</b>",'<ul>'+p.lean_discharges.map(x=>"<li>"+esc(x)+"</li>").join("")+'</ul><div class="faint" style="margin-top:6px">open: '+esc(p.open_theorems[0])+'</div>',rcp(d.mesh))+
+      '</div>';
+  }
+  if(S.tab==="GOVERNANCE"){
+    const g=gov.governance,st=gov.standards,sc=gov.showcase;
+    v.innerHTML='<div class="grid cols3">'+
+      panel("<b>COMPONENTS</b> / a11oy / killinchu / hatun",'<table>'+Object.entries(g.components).map(([k,c])=>'<tr><td><a href="'+c.repo+'">'+esc(k)+'</a></td><td class="muted">'+esc(c.role)+'</td></tr>').join("")+'</table>',rcp(d.governance))+
+      panel("<b>GATES</b> / owner-held",'<ul>'+g.gates_held.map(x=>"<li>"+esc(x)+"</li>").join("")+'</ul><div class="muted" style="margin-top:8px">'+g.gates_recent.map(x=>tag("DONE","g")+" "+esc(x)).join("<br>")+'</div>',rcp(d.governance))+
+      panel("<b>STANDARDS</b> / ietf positions",'<ul>'+st.positions.map(x=>"<li>"+esc(x)+"</li>").join("")+'</ul><div style="margin-top:8px"><a href="'+st.repo+'/'+st.path+'">'+esc(st.repo.split("/")[1]+'/'+st.path)+'</a></div><div class="faint" style="margin-top:6px">'+esc(st.ietf_note)+'</div>',rcp(d.governance))+
+      '</div><div class="grid cols3" style="margin-top:14px">'+
+      panel("<b>REPOS</b> / github",'<div class="muted">'+sc.repos.map(r=>'<a href="https://github.com/szl-holdings/'+r+'">'+r+'</a>').join(" / ")+'</div>',rcp(d.governance))+
+      panel("<b>DATASETS</b> / hf",'<div class="muted">'+sc.datasets.map(r=>'<a href="https://huggingface.co/datasets/SZLHOLDINGS/'+r+'">'+r+'</a>').join(" / ")+'</div>',rcp(d.governance))+
+      panel("<b>KERNELS</b>",'<div class="muted">'+sc.kernels.map(esc).join(" / ")+'</div>',rcp(d.governance))+
+      '</div>';
+  }
+}
+function tick(){document.getElementById("clock").textContent=new Date().toISOString().slice(11,19)+"Z"}
+setInterval(tick,1000);tick();tabBtns();pull();setInterval(pull,30000);
+</script>
+</body>
+</html>
