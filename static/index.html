@@ -178,7 +178,7 @@ function render(){
   if(S.tab==="MODELS"){
     const ms=hf.models||[];const top=ms.slice().sort((a,b)=>(b.downloads||0)-(a.downloads||0)).slice(0,25);
     v.innerHTML='<div class="grid">'+
-      panel("<b>HUGGING FACE</b> / '+esc(hf.source)+' inventory ('+ms.length+' models, '+(hf.datasets||[]).length+' datasets, '+(hf.spaces||[]).length+' spaces)', '<table><tr><th>model</th><th>downloads</th><th>gated</th><th>vis</th></tr>'+top.map(m=>'<tr><td><a href="https://huggingface.co/'+esc(m.id)+'">'+esc(m.id)+'</a></td><td class="t">'+(m.downloads||0)+'</td><td>'+esc(m.gated)+'</td><td>'+(m.private?tag("PRIVATE","d"):tag("PUBLIC","g"))+'</td></tr>').join("")+'</table><div class="muted" style="margin-top:8px">spaces: '+ (hf.spaces||[]).slice(0,12).map(s=>'<a href="https://huggingface.co/spaces/'+esc(s.id)+'">'+esc(s.id.split("/")[1])+'</a>').join(" / ")+'</div>',rcp(d.hf))+
+      panel("<b>HUGGING FACE</b> / "+esc(hf.source)+" inventory ("+ms.length+" models, "+(hf.datasets||[]).length+" datasets, "+(hf.spaces||[]).length+" spaces)", '<table><tr><th>model</th><th>downloads</th><th>gated</th><th>vis</th></tr>'+top.map(m=>'<tr><td><a href="https://huggingface.co/'+esc(m.id)+'">'+esc(m.id)+'</a></td><td class="t">'+(m.downloads||0)+'</td><td>'+esc(m.gated)+'</td><td>'+(m.private?tag("PRIVATE","d"):tag("PUBLIC","g"))+'</td></tr>').join("")+'</table><div class="muted" style="margin-top:8px">spaces: '+ (hf.spaces||[]).slice(0,12).map(s=>'<a href="https://huggingface.co/spaces/'+esc(s.id)+'">'+esc(s.id.split("/")[1])+'</a>').join(" / ")+'</div>',rcp(d.hf))+
       '</div>';
   }
   if(S.tab==="PROOF"){
