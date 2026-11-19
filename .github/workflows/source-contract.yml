@@ -18,6 +18,8 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
+      - name: Validate front-end JavaScript syntax, response integrity, and freshness guards
+        run: node --test tests/frontend_contract.test.cjs
       - name: Compile source without importing dependencies
         run: python3 -m py_compile app.py
       - name: Validate receipt, health, and route contracts
