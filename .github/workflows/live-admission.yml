@@ -1,0 +1,31 @@
+name: Frontier Console Live Admission (read-only)
+
+# Separate from PR checks: a broken or stale production deployment must be
+# visible as a HOLD, without allowing external availability to bypass source CI.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '19 */4 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontier-console-live-admission
+  cancel-in-progress: false
+
+jobs:
+  admission:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - name: Checkout versioned admission policy
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Confirm admission unit tests before probing
+        run: python3 -m unittest discover -s tests -p 'test_live_admission.py' -v
+      - name: Measure external GitHub-Hugging Face-live parity
+        run: python3 tools/live_admission.py
