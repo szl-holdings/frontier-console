@@ -15,7 +15,7 @@ from typing import Any, Dict, List
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, Response
 
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.3.1"
 START_TS = time.time()
 HF_ORG = "SZLHOLDINGS"
 GH_ORG = "szl-holdings"
@@ -60,8 +60,7 @@ SCHOLAR_V1 = {
 
 STRUCTURE_V1 = {
     "id": "khipu-structure-v1-complete",
- 
-   "kind": "TRAINING_COMPLETION",
+    "kind": "TRAINING_COMPLETION",
     "status": "AUTHORIZED",
     "ts": "2026-11-18T12:51:52Z",
     "model": "SZLHOLDINGS/salad-khipu-structure-v1",
@@ -90,18 +89,33 @@ STRUCTURE_EVAL = {
     "no_decipherment_claims": True,
 }
 
+SUPPLY_CHAIN = {
+    "status": "ML-BOMs LIVE; ADAPTER SIGNING QUEUED",
+    "ml_boms": [
+        {"model": "salad-khipu-scholar-v1", "artifact": "bom/ml-bom.json", "spec": "CycloneDX 1.7 ML-BOM", "commit": "6a3677595f90bb857406e026e050bc63078425af"},
+        {"model": "salad-khipu-structure-v1", "artifact": "bom/ml-bom.json", "spec": "CycloneDX 1.7 ML-BOM", "commit": "03ceac415c12cca0a3f1fd5cdfd69b36ec4b3f19"},
+    ],
+    "model_signing": {"lane": "szl-sign-adapters-v1 + clone b", "tool": "CoSAI sigstore model-signing (estate EC P-256 key; ed25519 manifest fallback), fail closed", "restraint": "integrity signing with estate-held key, not keyless OIDC identity", "status": "QUEUED on free tier, auto-park armed"},
+    "field_leaders": {
+        "provenance": "Sigstore model-signing / CycloneDX 1.7 / OWASP AIBOM / SPDX 3.0",    "throughput": "Unsloth (spec merged, gated on measured smoke test)",
+        "corpus_studies": "Metrological Domain Profiling IV (context citation only)",
+    },
+    "no_decipherment_claims": True,
+}
+
 FLEET_SNAPSHOT = {
-    "ts": "2026-11-19T04:58Z",
+    "ts": "2026-11-19T09:40Z",
     "lanes": [
-        {"lane": "szl-train-khipu-scholar-4b-v1", "status": "RESTARTED FROM SCRATCH @ 2026-11-19T01:13Z (Nov-18 run died silently)", "note": "step 160 / loss 0.0556; honest ETA ~2026-11-20"},
+        {"lane": "szl-train-khipu-scholar-4b-v1", "status": "RUN #3 + RESILIENCE PATCHED @ 2026-11-19T09:00Z", "note": "silent hard kills diagnosed (no crash receipts); checkpoints now sync to hub every 200 steps + resume-from-latest on boot; honest ETA ~2026-11-20/21 UTC"},
         {"lane": "szl-train-khipu-structure-v1", "status": "COMPLETE + RELEASED @ 12:51:52Z; churn retrain parked 16:42Z", "note": "loss 0.0360 / 2,000 steps / 25.62 GPU-h"},
         {"lane": "szl-eval-khipu-scholar-v1", "status": "EVAL (replicas=1, measured)", "note": "scholar eval lane"},
         {"lane": "szl-eval-khipu-structure-v1", "status": "EVAL COMPLETE (cipher_exact_match 0.9113, n=282, 04:56:50Z), PARKED (replicas=0)", "note": "structure eval lane"},
-        {"lane": "
-szl-inference-v3", "status": "SERVING (replicas=1, measured)", "note": "inference lane"},
+        {"lane": "szl-sign-adapters-v1", "status": "QUEUED on free tier (cpu-only) since 08:22Z", "note": "CoSAI sigstore model-signing over both released adapters; estate-key fallback; auto-park watcher armed; b-clone hedge szl-sign-adapters-v1b"},
+        {"lane": "szl-eval-heritage-transfer-v1", "status": "QUEUED on free tier since 07:18Z", "note": "heritage-transfer eval (47 Lean-verified gold rows); auto-park watcher armed; b-clone hedge szl-eval-heritage-transfer-v1b"},
+        {"lane": "szl-inference-v3", "status": "SERVING (replicas=1, measured)", "note": "inference lane"},
     ],
     "total_lanes_measured": 73,
-    "watchers": {"mesh_watch": "ALIVE (PID 23704; source lost in cleanup - resilience debt)", "complete_watch": "DEAD @ 2026-11-19 (lane receipts unaffected)"},
+    "watchers": {"mesh_watch": "ALIVE (PID 23704; source lost in cleanup - resilience debt)", "sign_watch": "ALIVE (PID 19760, 24h window): auto-parks sign + heritage lanes on receipt", "train4b_watch": "ALIVE (PID 25144, 48h window): auto-parks 4b train lane on complete receipt"},
 }
 
 OUTREACH = [
@@ -125,8 +139,7 @@ GOVERNANCE = {
     "gates_held": ["PyPI publish (owner-only)", "Cloudflare onboarding: billing/DNS (owner-only)", "szlholdings.com DNS/TLS (owner-only)"],
     "gates_recent": ["szl-lambda-gate flipped gated=auto (2026-11-18): access requests auto-granted, funnel preserved"],
     "components": {
-        "a11oy": {"repo": "https://github.com/szl-holdings/a11oy", "role": "governed-AI command center; deny by default, signed receipts, trust
- ceiling 0.97"},
+        "a11oy": {"repo": "https://github.com/szl-holdings/a11oy", "role": "governed-AI command center; deny by default, signed receipts, trust ceiling 0.97"},
         "killinchu": {"repo": "https://github.com/szl-holdings/killinchu", "hf": "https://huggingface.co/SZLHOLDINGS/killinchu", "role": "OSINT/vision lane (KILLINCHU-EYE model, killinchu-osint corpus)"},
         "hatun-mcp": {"repo": "https://github.com/szl-holdings/hatun-mcp", "role": "MCP tooling lane (hatun-mcp space, hatun24 train lanes)"},
     },
@@ -140,6 +153,13 @@ STANDARDS = {
 }
 
 EVENTS = [
+    {"ts": "2026-11-19T09:25Z", "kind": "HEDGE", "detail": "b-clones created (sign-adapters-v1b, eval-heritage-transfer-v1b): deterministic idempotent jobs doubled against free-tier queue; tri-level auto-park (watchers 19760 / 25144 / 24020)"},
+    {"ts": "2026-11-19T08:58Z", "kind": "SPEED", "detail": "4b run #4 measured ~33 s/step (vs 72 s earlier runs), step 20 loss 2.96; honest ETA ~2026-11-20 early UTC"},
+
+    {"ts": "2026-11-19T09:00Z", "kind": "RESILIENCE", "detail": "4b lane run #3 restarted 08:36Z after another silent hard kill; PATCHED: checkpoints sync to the runs repo every 200 steps + resume-from-latest on boot + post-complete cleanup"},
+    {"ts": "2026-11-19T08:22Z", "kind": "SIGN", "detail": "model-signing lane created (szl-sign-adapters-v1, cpu): CoSAI sigstore model-signing over both released adapters, estate-key fallback, fail closed; auto-park watcher armed"},
+    {"ts": "2026-11-19T08:05Z", "kind": "SUPPLY_CHAIN", "detail": "CycloneDX 1.7 ML-BOMs live next to both released adapters (scholar 6a367759, structure 03ceac41), receipt-verified values only"},
+
     {"ts": "2026-11-19T04:58Z", "kind": "PARK", "detail": "structure eval lane parked (replicas=0) after signed eval receipt; scholar eval keeps auto-parking until 4b adapter lands"},
     {"ts": "2026-11-19T04:56:50Z", "kind": "EVAL", "detail": "structure-v1 eval COMPLETE: cipher_exact_match 0.9113 (n=282 of 343 rows, 4.5 min), receipt + preds on mesh; split bug fixed on Salad"},
     {"ts": "2026-11-19T01:13Z", "kind": "RESTART", "detail": "scholar-4b restarted from scratch (Nov-18 run died silently, step 1260 / loss 0.0081 lost); retraining, ETA ~2026-11-20"},
@@ -148,8 +168,7 @@ EVENTS = [
     {"ts": "2026-11-18T12:51:52Z", "kind": "TRAINING_COMPLETE", "detail": "structure-v1: loss 0.0360 / 2,000 steps / 25.62 GPU-h, DSSE receipt"},
     {"ts": "2026-11-18T02:49Z", "kind": "AUDIT", "detail": "org audit measured: 174 GitHub repos, Salad lanes, HF models/datasets/spaces live-counted"},
     {"ts": "2026-11-18T02:44Z", "kind": "ACCESS", "detail": "szl-lambda-gate -> gated=auto; alyagh pending request auto-granted"},
-    {"ts":
- "2026-11-18T02:43Z", "kind": "OUTREACH", "detail": "3 khipu-scholars co-authorship emails sent from stephen@szlholdings.com (Hyland first)"},
+    {"ts": "2026-11-18T02:43Z", "kind": "OUTREACH", "detail": "3 khipu-scholars co-authorship emails sent from stephen@szlholdings.com (Hyland first)"},
     {"ts": "2026-11-18T02:35Z", "kind": "RELEASE", "detail": "szl-khipu-scholar PR #4 merged (main 0c67eda): scholar-v1 RELEASED"},
     {"ts": "2026-11-18T00:06:08Z", "kind": "TRAINING_COMPLETE", "detail": "scholar-v1: loss 0.0085 / 2,000 steps / 9.45 GPU-h, DSSE receipt"},
     {"ts": "2026-11-17T19:18Z", "kind": "SPACE", "detail": "khipu-proof-loom v2 Space RUNNING (3 min after merge)"},
@@ -171,8 +190,7 @@ SHOWCASE = {
         {"id": "szl-lambda-gate", "downloads": 69, "note": "auto-gated pointer repo"},
     ],
     "spaces": ["khipu-proof-loom", "a11oy", "killinchu", "counsel", "terra", "sentra", "finance", "anatomy", "szl-frontier", "szl-model-inference-lab", "ayllu", "szl-constellation"],
-    "repos": ["a11oy", "killinchu", "hatun-mcp", "szl-khipu", "szl-khipu-scholar", "szl-lake", "szl-router", "szl-serve", "platform", "governance-as-code", "szl-evidence-core", "szl-trust", "frontier-54-runs", "frontier-console", "szl-gpu-bridge
-", "a-11-oy.github.io", "szlholdings.com"],
+    "repos": ["a11oy", "killinchu", "hatun-mcp", "szl-khipu", "szl-khipu-scholar", "szl-lake", "szl-router", "szl-serve", "platform", "governance-as-code", "szl-evidence-core", "szl-trust", "frontier-54-runs", "frontier-console", "szl-gpu-bridge", "a-11-oy.github.io", "szlholdings.com"],
     "datasets": ["khipu-scholars-corpus-v1", "khipu-scholar-runs", "khipu-scholar-eval-v1", "frontier-54-runs", "killinchu-osint-corpus", "szl-lake", "doctrine-v10-v11", "estate-graph", "governed-receipts-bench", "energy-attested-runs"],
     "kernels": ["kernels/SZLHOLDINGS/szl-lambda-gate (public)", "szl-kernels (299 downloads)"],
 }
@@ -217,8 +235,7 @@ def _hf_inventory() -> Dict[str, Any]:
         for s in api.list_spaces(author=HF_ORG):
             rt = getattr(s, "runtime", None)
             spaces.append({"id": s.id, "stage": str(getattr(rt, "stage", "UNKNOWN")) if rt else "UNKNOWN", "private": bool(getattr(s, "private", False))})
-        return {"source": "live", "m
-odels": models, "datasets": datasets, "spaces": spaces}
+        return {"source": "live", "models": models, "datasets": datasets, "spaces": spaces}
     except Exception as e:
         return {"source": "UNAVAILABLE", "error": repr(e)[:200], "models": [], "datasets": [], "spaces": []}
 
@@ -252,8 +269,7 @@ def _salad_fleet() -> Dict[str, Any]:
             try:
                 r2 = urllib.request.urlopen(urllib.request.Request(base + "/" + l["lane"] + "/instances", headers={"Salad-Api-Key": key}), timeout=15)
                 insts = json.loads(r2.read().decode())
-                insts = insts.get("instances", insts) if isinstance(i
-nsts, dict) else insts
+                insts = insts.get("instances", insts) if isinstance(insts, dict) else insts
                 l["instances"] = len(insts) if isinstance(insts, list) else len(str(insts))
             except Exception:
                 l["instances"] = "UNKNOWN"
@@ -292,7 +308,7 @@ def fleet():
 
 @app.get("/api/mesh")
 def mesh():
-    return receipted({"scholar_v1": SCHOLAR_V1, "structure_v1": STRUCTURE_V1, "structure_eval": STRUCTURE_EVAL, "outreach": OUTREACH, "proof": PROOF, "events": EVENTS})
+    return receipted({"scholar_v1": SCHOLAR_V1, "structure_v1": STRUCTURE_V1, "structure_eval": STRUCTURE_EVAL, "supply_chain": SUPPLY_CHAIN, "outreach": OUTREACH, "proof": PROOF, "events": EVENTS})
 
 
 @app.get("/api/governance")
