@@ -92,6 +92,111 @@ test("missing proof-critical API data is withheld, not filled from stale numbers
   assert.doesNotMatch(html, /const FALLBACK=/);
 });
 
+
 test("Models page markup is valid JavaScript after pre-existing parser repair", () => {
   new vm.Script(match[1], { filename: "console-inline.js" });
+});
+
+// Exercise the *real browser pull() call path*, not just parseReceiptResponse().
+// It must actually invoke the parser and the visible audit-notice pathway.
+const JS_UNDER_TEST = match[1].slice(0, end);
+function syntheticPull({ mutateAllBytes = false, fleetSource = "live", failEndpoint = null, source = JS_UNDER_TEST } = {}) {
+  const elements = new Map();
+  function getElementById(id) {
+    if (!elements.has(id)) elements.set(id, { innerHTML: "", textContent: "", style: {} });
+    return elements.get(id);
+  }
+  const data = {
+    health: { version: "1.3.1" },
+    estate: { github: { source: "live" }, site: { site_posture_measured: "TEST FIXTURE" } },
+    hf: { source: "live", models: [], datasets: [], spaces: [] },
+    fleet: { source: fleetSource, lanes: [], watchers: {}, total_lanes: 0 },
+    mesh: {
+      scholar_v1: {
+        final_loss: 0.5, corpus_sha256: "a".repeat(64), model: "fixture",
+        evidence: "#", status: "REPORTED", base: "fixture", steps: 1,
+        gpu_hours: 0, signature: "UNVERIFIED",
+      },
+      events: [],
+    },
+    governance: { governance: { principles: [], gates_held: [] } },
+  };
+  const fetch = async url => {
+    const endpoint = url.replace("/api/", "");
+    if (!(endpoint in data)) throw Error("unrecognized test endpoint");
+    const payload = { status: "OK", data: data[endpoint] };
+    const signedBytes = Buffer.from(JSON.stringify(payload));
+    const bodyBytes = mutateAllBytes
+      ? Buffer.from(JSON.stringify({ ...payload, data: { ...data[endpoint], tampered: true } }))
+      : signedBytes;
+    const hash = "sha256:" + createHash("sha256").update(signedBytes).digest("hex");
+    return {
+      ok: endpoint !== failEndpoint,
+      status: endpoint === failEndpoint ? 503 : 200,
+      headers: { get: name => name.toLowerCase() === "x-szl-receipt" ? hash : null },
+      arrayBuffer: async () => Uint8Array.from(bodyBytes).buffer,
+      // A malicious source edit could bypass verification and use .json() instead.
+      json: async () => JSON.parse(bodyBytes.toString("utf8")),
+    };
+  };
+  const scope = vm.createContext({
+    crypto: webcrypto,
+    TextDecoder,
+    fetch,
+    document: { getElementById },
+  });
+  vm.runInContext(source, scope, { timeout: 3000, filename: "synthetic-console.js" });
+  return {
+    async run() {
+      await vm.runInContext("pull()", scope, { timeout: 3000 });
+      return {
+        live: vm.runInContext("S.live", scope),
+        stale: getElementById("stale"),
+        view: getElementById("view"),
+      };
+    },
+  };
+}
+
+test("browser pull rejects every tampered HTTP-200 receipt instead of accepting JSON", async () => {
+  const { live, stale, view } = await syntheticPull({ mutateAllBytes: true }).run();
+  assert.equal(live, false);
+  assert.match(stale.textContent, /UNAVAILABLE \/ UNVERIFIED API/);
+  assert.equal(stale.style.display, "block");
+  assert.match(view.innerHTML, /PROOF-CRITICAL FEEDS UNAVAILABLE/);
+  assert.doesNotMatch(view.innerHTML, /REPORTED|0\.5000|2000 steps/);
+});
+
+test("browser pull shows SNAPSHOT fleet and historical mesh warnings on otherwise valid 200s", async () => {
+  const { stale, live } = await syntheticPull({
+    fleetSource: "SNAPSHOT (SALAD_API_KEY not configured)",
+  }).run();
+  assert.equal(live, true);  // All API payload hashes matched; NOT live fleet proof.
+  assert.equal(stale.style.display, "block");
+  assert.match(stale.textContent, /FLEET NOT LIVE: SNAPSHOT/);
+  assert.match(stale.textContent, /HISTORICAL MESH VALUES/);
+});
+
+test("browser pull with one failing proof-critical API withholds cards", async () => {
+  const { live, stale, view } = await syntheticPull({ failEndpoint: "governance" }).run();
+  assert.equal(live, false);
+  assert.match(stale.textContent, /UNAVAILABLE \/ UNVERIFIED API: governance/);
+  assert.match(view.innerHTML, /PROOF-CRITICAL FEEDS UNAVAILABLE/);
+});
+
+test("mutation sentinels prove these tests catch bypassed verification and hidden warnings", async () => {
+  const unverified = JS_UNDER_TEST.replace(
+    'res[e]=await parseReceiptResponse(await fetch("/api/"+e,{cache:"no-store"}));',
+    'res[e]=await (await fetch("/api/"+e,{cache:"no-store"})).json();',
+  );
+  assert.notEqual(unverified, JS_UNDER_TEST, "source must call receipt parser in pull()");
+  const unsafe = await syntheticPull({ source: unverified, mutateAllBytes: true }).run();
+  assert.equal(unsafe.live, true, "fixture must expose parser-bypass mutant");
+  const hidden = JS_UNDER_TEST.replace(
+    "const notices=auditNotices(res);",
+    "const notices=[];",
+  );
+  assert.notEqual(hidden, JS_UNDER_TEST, "source must call auditNotices in pull()");
+  const muted = await syntheticPull({ source: hidden, fleetSource: "SNAPSHOT" }).run();
+  assert.equal(muted.stale.style.display, "none", "fixture must expose hidden-warning mutant");
 });
