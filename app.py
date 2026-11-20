@@ -128,8 +128,14 @@ PROOF = {
     "spatial_null": {"observed": 54, "expected": 11.035, "p": 0.000999, "receipt": "merged to szl-khipu main"},
     "hjo_certificate": "hjo_certificate_v1.json",
     "proof_loom_v2": {"merged_sha": "00002bf117420363a8844d03cecbd177bd2bd199", "merged_ts": "2026-11-17T19:15:47Z", "space": "https://huggingface.co/spaces/SZLHOLDINGS/khipu-proof-loom", "space_stage_measured": "RUNNING @ 2026-11-18T02:49Z"},
-    "lean_discharges": ["P_B5", "P_A5.f_n2_up", "P_B4.n2_base_case", "P_B4.entry_bound"],
-    "open_theorems": ["putnam_B4_correct (strategy locked: three-bound staircase equality)"],
+    # The two P_B4 declarations still contain `sorry` on lutar-lean/main.
+    # Do not promote strategy sketches or draft PRs to machine-checked discharges.
+    "lean_discharges": ["P_B5", "P_A5.f_n2_up"],
+    "open_theorems": [
+        "P_B4.entry_bound (source contains sorry; proof candidate under review)",
+        "P_B4.n2_base_case (source contains sorry)",
+        "putnam_B4_correct (strategy locked: three-bound staircase equality)",
+    ],
 }
 
 GOVERNANCE = {
