@@ -21,8 +21,8 @@ HF_ORG = "SZLHOLDINGS"
 GH_ORG = "szl-holdings"
 
 try:
-    with io.open(__file__, "r", encoding="utf-8") as _f:
-        SELF_SHA256 = hashlib.sha256(_f.read().encode("utf-8")).hexdigest()
+    with io.open(__file__, "rb") as _f:
+        SELF_SHA256 = hashlib.sha256(_f.read()).hexdigest()
 except Exception:
     SELF_SHA256 = "UNAVAILABLE"
 
