@@ -9,6 +9,7 @@ import importlib.util
 import json
 import re
 import sys
+import tempfile
 import types
 import unittest
 from pathlib import Path
@@ -32,7 +33,7 @@ class FakeResponse:
         self.headers = {}
 
 
-def load_app():
+def load_app(source_path=None):
     fake_fastapi = types.ModuleType("fastapi")
     fake_fastapi.FastAPI = FakeFastAPI
     fake_responses = types.ModuleType("fastapi.responses")
@@ -41,7 +42,7 @@ def load_app():
     with patch.dict(sys.modules, {
         "fastapi": fake_fastapi, "fastapi.responses": fake_responses
     }):
-        spec = importlib.util.spec_from_file_location("szl_frontier_contract", ROOT / "app.py")
+        spec = importlib.util.spec_from_file_location("szl_frontier_contract", source_path or ROOT / "app.py")
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
     return module
@@ -67,6 +68,16 @@ class FrontierConsoleContractTests(unittest.TestCase):
         self.assertEqual(
             self.module.SELF_SHA256, hashlib.sha256((ROOT / "app.py").read_bytes()).hexdigest()
         )
+
+    def test_self_hash_preserves_crlf_source_bytes(self):
+        # Force a CRLF checkout on every OS; text-mode hashing must fail this test.
+        source = (ROOT / "app.py").read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
+        self.assertIn(b"\r\n", source)
+        with tempfile.TemporaryDirectory() as directory:
+            source_path = Path(directory) / "app.py"
+            source_path.write_bytes(source)
+            loaded = load_app(source_path)
+            self.assertEqual(loaded.SELF_SHA256, hashlib.sha256(source).hexdigest())
 
     def test_failure_envelope_never_becomes_ok(self):
         response = self.module.receipted({"reason": "unavailable"}, status="UNAVAILABLE")
