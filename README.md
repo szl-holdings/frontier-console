@@ -33,8 +33,14 @@ Doctrine v11: deny by default, fail closed, honest UNKNOWN over fabricated green
 
 ## Run locally
 
-pip install -r requirements.txt
+```bash
+python -m pip install --require-hashes --only-binary=:all: -r requirements.lock
 uvicorn app:app --port 7860
+```
+
+For pinned source tests, a no-network Docker smoke test and exact publication
+hashes, see the [runtime smoke and publication hold](docs/operations/RUNTIME_SMOKE_AND_PUBLICATION_HOLD.md).
+Matching `X-SZL-Receipt` authenticates no signer: it checks raw-body bytes only.
 
 ## Deploy to szlholdings.com
 
@@ -86,7 +92,9 @@ flowchart LR
 
 ## Deployment recommendations
 
-- HF Space deploy is ready as-is (port 7860).
+- The image listens on port 7860. A passing local smoke is not a publication
+  approval; the [revision-bound admission report](docs/operations/RUNTIME_SMOKE_AND_PUBLICATION_HOLD.md)
+  records the parity, syntax and fleet holds.
 - For szlholdings.com, use the owner-gated Cloudflare path described above (billing and DNS are owner-only per doctrine).
 - Public operation needs no secrets; keep SALAD_API_KEY server-side only if live fleet telemetry is enabled.
 

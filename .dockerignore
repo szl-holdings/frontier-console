@@ -1,0 +1,6 @@
+**
+!Dockerfile
+!requirements.lock
+!app.py
+!static/
+!static/index.html
