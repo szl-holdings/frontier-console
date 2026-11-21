@@ -34,7 +34,7 @@ def fixture(fleet_source="live"):
     for ep in admission.ENDPOINTS:
         data = {"source": "live"}
         if ep == "health":
-            data = {"version": "1.3.1"}
+            data = {"version": "1.3.1", "self_sha256": hashlib.sha256(local_app).hexdigest()}
         if ep == "estate":
             data = {"github": {"source": "live"}}
         if ep == "fleet":
@@ -77,14 +77,15 @@ class EnvelopeTests(unittest.TestCase):
 
 
 class AdmissionTests(unittest.TestCase):
-    def run_fixture(self, *, fleet="live", alter=None, missing=None):
+    def run_fixture(self, *, fleet="live", alter=None, missing=None, missing_local_app=False):
         app, html, urls = fixture(fleet)
         if alter:
             alter(urls)
         with tempfile.TemporaryDirectory(prefix="szl-admission-tests-") as d:
             root = Path(d)
             (root / "static").mkdir()
-            (root / "app.py").write_bytes(app)
+            if not missing_local_app:
+                (root / "app.py").write_bytes(app)
             (root / "static" / "index.html").write_bytes(html)
 
             def read(url):
@@ -98,7 +99,33 @@ class AdmissionTests(unittest.TestCase):
         result = self.run_fixture()
         self.assertEqual(result["admission"], "PASS_FOR_SCOPED_CHECKS_ONLY")
         self.assertEqual(result["hold_checks"], [])
+        self.assertEqual(result["checks"]["health_self_sha256_parity"]["result"], "PASS")
         self.assertIn("Historical mesh snapshots", result["limitations"][1])
+
+    def test_same_version_and_valid_envelope_do_not_substitute_for_checkout_digest(self):
+        for fields in ({}, {"self_sha256": "0" * 64}, {"self_sha256": "a" * 63},
+                       {"self_sha256": "g" * 64}, {"self_sha256": None}, {"self_sha256": 0}):
+            with self.subTest(fields=fields):
+                def mutate(urls):
+                    urls[admission.LIVE_URL + "/api/health"] = api_response({"version": "1.3.1", **fields})
+                result = self.run_fixture(alter=mutate)
+                self.assertEqual(result["hold_checks"], ["health_self_sha256_parity"])
+                self.assertEqual(result["admission"], "HOLD")
+
+    def test_health_digest_is_bound_to_checkout_not_hub(self):
+        def mutate(urls):
+            other = b'APP_VERSION = "1.3.1"\n# different backend bytes\n'
+            urls[admission.SPACE_HUB + "/resolve/" + SHA + "/app.py"] = (other, {})
+            urls[admission.LIVE_URL + "/api/health"] = api_response(
+                {"version": "1.3.1", "self_sha256": hashlib.sha256(other).hexdigest()})
+        result = self.run_fixture(alter=mutate)
+        self.assertEqual(set(result["hold_checks"]), {"app_parity", "health_self_sha256_parity"})
+
+    def test_missing_checkout_is_not_a_matching_missing_digest(self):
+        def mutate(urls):
+            urls[admission.LIVE_URL + "/api/health"] = api_response({"version": "1.3.1"})
+        result = self.run_fixture(alter=mutate, missing_local_app=True)
+        self.assertIn("health_self_sha256_parity", result["hold_checks"])
 
     def test_fleet_snapshot_prevents_false_green(self):
         result = self.run_fixture(fleet="SNAPSHOT (SALAD_API_KEY not configured)")
@@ -126,15 +153,16 @@ class AdmissionTests(unittest.TestCase):
         self.assertEqual(result["admission"], "HOLD")
         self.assertIn("api_health_hash_envelope", result["hold_checks"])
         self.assertIn("health_version_parity", result["hold_checks"])
+        self.assertIn("health_self_sha256_parity", result["hold_checks"])
 
     def test_stale_api_receipt_timestamp_is_not_current_health(self):
         def mutate(urls):
-            urls[admission.LIVE_URL + "/api/health"] = api_response(
-                {"version": "1.3.1"}, ts="2026-11-19T15:30:00Z"
-            )
+            key = admission.LIVE_URL + "/api/health"
+            data = json.loads(urls[key][0])["data"]
+            urls[key] = api_response(data, ts="2026-11-19T15:30:00Z")
         result = self.run_fixture(alter=mutate)
         self.assertEqual(result["admission"], "HOLD")
-        self.assertIn("api_health_freshness", result["hold_checks"])
+        self.assertEqual(result["hold_checks"], ["api_health_freshness"])
 
 
 if __name__ == "__main__":

@@ -113,6 +113,7 @@ def assess(
     checks: dict[str, dict[str, str]] = {}
     hub_sha = None
     hub_app = None
+    canonical_app_sha = None
     hub_frontend = None
     checked_at = now.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -161,6 +162,8 @@ def assess(
             _result(checks, label + "_pinned_hub_read", False, "immutable Hub SHA unavailable")
         if label == "app":
             hub_app = remote
+            if local is not None:
+                canonical_app_sha = sha256(local)
         else:
             hub_frontend = remote
         _result(
@@ -201,6 +204,10 @@ def assess(
             if endpoint == "health":
                 ok = expected_version is not None and data.get("version") == expected_version
                 _result(checks, "health_version_parity", ok, "API health version must match pinned Space source")
+                # Exact equality to the checkout's hexdigest also requires 64 lowercase hex digits.
+                _result(checks, "health_self_sha256_parity",
+                        canonical_app_sha is not None and data.get("self_sha256") == canonical_app_sha,
+                        "API health self_sha256 must match exact canonical GitHub app.py bytes")
             elif endpoint == "fleet":
                 _result(
                     checks, "fleet_live_provenance",
@@ -228,6 +235,8 @@ def assess(
                         "hf": "hf_inventory_live", "estate": "github_census_live"}
             if endpoint in required:
                 _result(checks, required[endpoint], False, "API unavailable")
+            if endpoint == "health":
+                _result(checks, "health_self_sha256_parity", False, "verified health envelope unavailable")
     hold = [name for name, entry in checks.items() if entry["result"] != "PASS"]
     return {
         "schema": "szl.frontier-console.live-admission/v1",
