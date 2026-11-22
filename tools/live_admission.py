@@ -134,16 +134,27 @@ def assess(
             if SHA40.fullmatch(value):
                 hub_sha = value
             _result(checks, "hub_revision", hub_sha is not None, "exact immutable Space SHA required")
+            runtime = meta.get("runtime")
+            runtime = runtime if isinstance(runtime, dict) else {}
+            runtime_sha = runtime.get("sha")
+            _result(
+                checks, "runtime_revision_parity",
+                hub_sha is not None and isinstance(runtime_sha, str)
+                and bool(SHA40.fullmatch(runtime_sha)) and runtime_sha == hub_sha,
+                "reported container runtime SHA must match immutable Hub revision",
+            )
             _result(
                 checks, "space_stage",
-                (meta.get("runtime") or {}).get("stage") == "RUNNING",
+                runtime.get("stage") == "RUNNING",
                 "Space metadata reports RUNNING (not proof of front-end execution)",
             )
         else:
             _result(checks, "hub_revision", False, "metadata unavailable")
+            _result(checks, "runtime_revision_parity", False, "metadata unavailable")
             _result(checks, "space_stage", False, "metadata unavailable")
     except (ValueError, TypeError, AttributeError):
         _result(checks, "hub_revision", False, "malformed Space metadata")
+        _result(checks, "runtime_revision_parity", False, "malformed Space metadata")
         _result(checks, "space_stage", False, "malformed Space metadata")
 
     for label, path in (("app", "app.py"), ("frontend", "static/index.html")):
