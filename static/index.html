@@ -164,9 +164,12 @@ function render(){
   }
   if(S.tab==="FLEET"){
     const active=fl.active||fl.lanes||[];
+    // Fleet containers may be live while watcher PIDs are an older snapshot.
+    const watcherProof=fl.watchers_source==="SNAPSHOT" && fl.watchers_snapshot_ts
+      ? "SNAPSHOT @ "+fl.watchers_snapshot_ts : "UNVERIFIED";
     v.innerHTML='<div class="grid cols2">'+
       panel("<b>FLEET LANES</b> / "+esc(fl.source||"UNAVAILABLE"),'<table><tr><th>lane</th><th>replicas</th><th>instances</th></tr>'+active.map(l=>'<tr><td>'+esc(l.lane)+'</td><td class="'+(l.replicas?"t":"faint")+'">'+esc(l.replicas!=null?l.replicas:l.status||"?")+'</td><td>'+esc(l.instances!=null?l.instances:(l.status||"-"))+'</td></tr>').join("")+'</table><div class="muted" style="margin-top:8px">total lanes '+(fl.total_lanes||fl.total_lanes_measured||"?")+' / parked '+(fl.parked_count!=null?fl.parked_count:(fl.total_lanes_measured?(fl.total_lanes_measured-active.length):"?"))+'</div>',rcp(d.fleet))+
-      panel("<b>WATCHERS</b> / "+esc(fl.source||"UNAVAILABLE"),'<ul>'+Object.entries(fl.watchers||{}).map(([k,v2])=>"<li>"+esc(k)+": <span class='t'>"+esc(v2)+"</span></li>").join("")+'</ul><div class="muted" style="margin-top:8px">mesh_watch re-fires evals at true gates; decommissioner parks finished/stale lanes (owner fleet order).</div>',rcp(d.fleet))+
+      panel("<b>WATCHERS</b> / "+esc(watcherProof),'<ul>'+Object.entries(fl.watchers||{}).map(([k,v2])=>"<li>"+esc(k)+": <span class='t'>"+esc(v2)+"</span></li>").join("")+'</ul><div class="muted" style="margin-top:8px">mesh_watch re-fires evals at true gates; decommissioner parks finished/stale lanes (owner fleet order).</div>',rcp(d.fleet))+
       '</div>';
   }
   if(S.tab==="MESH"){

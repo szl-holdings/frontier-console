@@ -110,7 +110,7 @@ function syntheticPull({ mutateAllBytes = false, fleetSource = "live", failEndpo
     health: { version: "1.3.1" },
     estate: { github: { source: "live" }, site: { site_posture_measured: "TEST FIXTURE" } },
     hf: { source: "live", models: [], datasets: [], spaces: [] },
-    fleet: { source: fleetSource, lanes: [], watchers: {}, total_lanes: 0 },
+    fleet: { source: fleetSource, lanes: [], watchers: { mesh_watch: "ALIVE (HISTORICAL FIXTURE)" }, watchers_source: "SNAPSHOT", watchers_snapshot_ts: "2026-11-19T09:40Z", total_lanes: 0 },
     mesh: {
       scholar_v1: {
         final_loss: 0.5, corpus_sha256: "a".repeat(64), model: "fixture",
@@ -147,8 +147,11 @@ function syntheticPull({ mutateAllBytes = false, fleetSource = "live", failEndpo
   });
   vm.runInContext(source, scope, { timeout: 3000, filename: "synthetic-console.js" });
   return {
-    async run() {
+    async run({ tab = "OVERVIEW" } = {}) {
       await vm.runInContext("pull()", scope, { timeout: 3000 });
+      if (tab !== "OVERVIEW") {
+        vm.runInContext("S.tab=" + JSON.stringify(tab) + ";render()", scope, { timeout: 3000 });
+      }
       return {
         live: vm.runInContext("S.live", scope),
         stale: getElementById("stale"),
@@ -175,6 +178,13 @@ test("browser pull shows SNAPSHOT fleet and historical mesh warnings on otherwis
   assert.equal(stale.style.display, "block");
   assert.match(stale.textContent, /FLEET NOT LIVE: SNAPSHOT/);
   assert.match(stale.textContent, /HISTORICAL MESH VALUES/);
+});
+
+test("live fleet never promotes historical watcher PIDs to live UI", async () => {
+  const { view } = await syntheticPull({ fleetSource: "live" }).run({ tab: "FLEET" });
+  assert.match(view.innerHTML, /FLEET LANES<\/b> \/ live/);
+  assert.match(view.innerHTML, /WATCHERS<\/b> \/ SNAPSHOT @ 2026-11-19T09:40Z/);
+  assert.doesNotMatch(view.innerHTML, /WATCHERS<\/b> \/ live/);
 });
 
 test("browser pull with one failing proof-critical API withholds cards", async () => {
