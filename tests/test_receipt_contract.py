@@ -5,6 +5,7 @@ the real app.py with a deliberately narrow fake framework exercises the actual
 response assembly, receipt hashing, and /api/health semantics.
 """
 import hashlib
+import io
 import importlib.util
 import json
 import re
@@ -90,6 +91,23 @@ class FrontierConsoleContractTests(unittest.TestCase):
     def test_api_routes_are_registered(self):
         for route in ("/api/health", "/api/estate", "/api/hf", "/api/fleet", "/api/mesh", "/api/governance"):
             self.assertIn(route, self.module.app.paths)
+
+    def test_live_fleet_does_not_claim_historical_watchers_are_live(self):
+        # Synthetic Salad list response; URL opener patched, so no provider calls.
+        with patch.dict(self.module.os.environ, {
+            "SALAD_API_KEY": "synthetic-fixture-only",
+            "SALAD_BASE": "https://invalid.example/containers",
+        }):
+            with patch.object(
+                self.module.urllib.request, "urlopen",
+                return_value=io.BytesIO(b"[]"),
+            ) as opened:
+                fleet = self.module._salad_fleet()
+        opened.assert_called_once()
+        self.assertEqual(fleet["source"], "live")
+        self.assertEqual(fleet["watchers_source"], "SNAPSHOT")
+        self.assertEqual(fleet["watchers_snapshot_ts"], self.module.FLEET_SNAPSHOT["ts"])
+        self.assertEqual(fleet["watchers"], self.module.FLEET_SNAPSHOT["watchers"])
 
     def test_release_version_is_explicit(self):
         self.assertRegex(self.module.APP_VERSION, r"^\d+\.\d+\.\d+$")

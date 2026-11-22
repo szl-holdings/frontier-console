@@ -279,7 +279,18 @@ def _salad_fleet() -> Dict[str, Any]:
                 l["instances"] = len(insts) if isinstance(insts, list) else len(str(insts))
             except Exception:
                 l["instances"] = "UNKNOWN"
-        return {"source": "live", "ts": _now(), "total_lanes": len(lanes), "active": active, "parked_count": len(lanes) - len(active), "watchers": FLEET_SNAPSHOT["watchers"]}
+        # Container observations came from Salad; watcher PIDs did not.
+        # Never present the dated local watcher snapshot as live provider data.
+        return {
+            "source": "live",
+            "ts": _now(),
+            "total_lanes": len(lanes),
+            "active": active,
+            "parked_count": len(lanes) - len(active),
+            "watchers": FLEET_SNAPSHOT["watchers"],
+            "watchers_source": "SNAPSHOT",
+            "watchers_snapshot_ts": FLEET_SNAPSHOT["ts"],
+        }
     except Exception as e:
         return {"source": "DEGRADED (probe failed)", "error": repr(e)[:200], "snapshot_ts": FLEET_SNAPSHOT["ts"], "lanes": FLEET_SNAPSHOT["lanes"]}
 
