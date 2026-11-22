@@ -1,6 +1,6 @@
 ---
 title: SZL Frontier Console
-emoji: 🪢
+emoji: ≡ƒ¬ó
 colorFrom: green
 colorTo: blue
 sdk: docker
