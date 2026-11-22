@@ -25,7 +25,7 @@ def fixture(fleet_source="live"):
     local_html = b'<html><script>const message="healthy";</script></html>\n'
     urls = {
         admission.SPACE_API: (json.dumps({
-            "sha": SHA, "runtime": {"stage": "RUNNING"}
+            "sha": SHA, "runtime": {"stage": "RUNNING", "sha": SHA}
         }).encode(), {}),
         admission.SPACE_HUB + "/resolve/" + SHA + "/app.py": (local_app, {}),
         admission.SPACE_HUB + "/resolve/" + SHA + "/static/index.html": (local_html, {}),
@@ -126,6 +126,25 @@ class AdmissionTests(unittest.TestCase):
             urls[admission.LIVE_URL + "/api/health"] = api_response({"version": "1.3.1"})
         result = self.run_fixture(alter=mutate, missing_local_app=True)
         self.assertIn("health_self_sha256_parity", result["hold_checks"])
+
+    def test_runtime_revision_mismatch_or_unknown_is_hold(self):
+        for reported in ("b" * 40, "", None, "A" * 40):
+            with self.subTest(reported=reported):
+                def mutate(urls):
+                    meta = json.loads(urls[admission.SPACE_API][0])
+                    meta["runtime"]["sha"] = reported
+                    urls[admission.SPACE_API] = (json.dumps(meta).encode(), {})
+                result = self.run_fixture(alter=mutate)
+                self.assertEqual(result["admission"], "HOLD")
+                self.assertEqual(result["hold_checks"], ["runtime_revision_parity"])
+
+    def test_malformed_runtime_is_explicit_hold(self):
+        def mutate(urls):
+            meta = json.loads(urls[admission.SPACE_API][0])
+            meta["runtime"] = "broken"
+            urls[admission.SPACE_API] = (json.dumps(meta).encode(), {})
+        result = self.run_fixture(alter=mutate)
+        self.assertEqual(set(result["hold_checks"]), {"runtime_revision_parity", "space_stage"})
 
     def test_fleet_snapshot_prevents_false_green(self):
         result = self.run_fixture(fleet="SNAPSHOT (SALAD_API_KEY not configured)")
