@@ -6,6 +6,10 @@ colorTo: blue
 sdk: docker
 app_port: 7860
 pinned: false
+license: apache-2.0
+szl:
+  source_repo: szl-holdings/frontier-console
+  proof_url: https://github.com/szl-holdings/frontier-console
 ---
 
 # SZL Frontier Console
