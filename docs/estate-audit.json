@@ -1,0 +1,37 @@
+{
+  "metadata": {
+    "repo_name": "frontier-console",
+    "last_audit_date": "2026-11-23",
+    "loop_level": 1
+  },
+  "estate_context": {
+    "purpose_domain": "receipts-native observability console for the SZL Holdings governed-AI estate",
+    "baseline_commit": "70c201314e8a823e99bd95e49c3955bb0cd357b6",
+    "leader_profiles": [
+      {
+        "name": "grafana/grafana (assigned frontier-console domain leader)",
+        "url": "https://github.com/grafana/grafana",
+        "checked_date": "2026-11-23"
+      }
+    ]
+  },
+  "evidence_index": {
+    "publications": [
+      {
+        "id": "github:grafana/grafana",
+        "link": "https://github.com/grafana/grafana",
+        "applicability": "Assigned canonical observability-console leader relevant to the receipts-native observability domain."
+      }
+    ],
+    "gap_register": [
+      "pyproject.toml is absent (pyproject=False); the inventory shows requirements.txt and requirements.lock instead.",
+      "A tests/ directory is present (tests_dir=True and tests/ appears in top_level), but no test-case count, coverage, or execution result is provided by the measured data.",
+      "Measured GitHub workflows are live-admission.yml and source-contract.yml; no separately measured test workflow is listed in workflows_measured."
+    ],
+    "prioritized_changes": [
+      "For gap 1, inventory the requirements files and runtime configuration before deciding whether a pyproject.toml is warranted; do not infer a packaging failure from its absence.",
+      "For gaps 2 and 3, map the tests/ contents to the two measured workflows and document any uncovered local test or validation path without claiming tests are absent or unrun."
+    ]
+  },
+  "execution_trace": {}
+}
