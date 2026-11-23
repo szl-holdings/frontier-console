@@ -36,6 +36,7 @@ def receipted(payload: Any, status: str = "OK") -> Response:
     r = Response(content=body, media_type="application/json")
     r.headers["X-SZL-Receipt"] = "sha256:" + hashlib.sha256(body).hexdigest()
     r.headers["X-SZL-App"] = "frontier-console/" + APP_VERSION
+    r.headers["Cache-Control"] = "no-store"
     return r
 
 
