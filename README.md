@@ -28,7 +28,7 @@ Doctrine v11: deny by default, fail closed, honest UNKNOWN over fabricated green
 
 | Route | Payload |
 |---|---|
-| /api/health | uptime, version, self sha256 of app.py |
+| /healthz | platform liveness alias for the receipted health response |\n| /api/health | uptime, version, self sha256 of app.py |
 | /api/estate | org stats (live), doctrine, links |
 | /api/hf | live HF org inventory: models / datasets / spaces + runtime stages |
 | /api/fleet | Salad fleet lanes (live if key set; else labeled snapshot) |
