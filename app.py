@@ -309,6 +309,12 @@ def health():
     return receipted({"app": "frontier-console", "version": APP_VERSION, "uptime_s": round(time.time() - START_TS, 1), "self_sha256": SELF_SHA256, "ts": _now()})
 
 
+@app.get("/healthz")
+def healthz():
+    """Platform liveness alias for the canonical JSON health response."""
+    return health()
+
+
 @app.get("/api/estate")
 def estate():
     return receipted({"github": _cache("gh", _gh_stats), "site": ESTATE_FALLBACK, "doctrine": GOVERNANCE["doctrine"]})
